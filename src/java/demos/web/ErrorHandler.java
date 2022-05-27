@@ -4,13 +4,8 @@
  */
 package demos.web;
 
-import demos.db.Product;
-import demos.model.ProductManager;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.List;
-import javax.inject.Inject;
-import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -21,12 +16,8 @@ import javax.servlet.http.HttpServletResponse;
  *
  * @author cristina
  */
-@WebServlet(name = "ProductList", urlPatterns = {"/list"})
-public class ProductList extends HttpServlet {
-
-    //CDI Beans: inyección de dependencias
-    @Inject
-    ProductManager pm;
+@WebServlet(name = "ErrorHandler", urlPatterns = {"/errors"})
+public class ErrorHandler extends HttpServlet {
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -41,15 +32,20 @@ public class ProductList extends HttpServlet {
             throws ServletException, IOException {
         response.setContentType("text/html;charset=UTF-8");
         try ( PrintWriter out = response.getWriter()) {
-            StringBuilder content = new StringBuilder();
-            String name = request.getParameter("p_name");
+            Throwable ex = (Throwable) request.getAttribute("javax.servlet.error.exception");
+            String errorMessage = (String) request.getAttribute("javax.servlet.error.message");
+            Integer status = (Integer) request.getAttribute("javax.servlet.error.status_code");
+            String message = "Error: ";
 
-            List<Product> products = pm.findProductByName(name);
-            if (!products.isEmpty()) {
-                products.stream().forEach(p -> content.append("<div class= 'data'>" + p + "</div>"));
-            } else {
-                content.append("<div class='error'>");
-                content.append("Unable to find any products matching name '" + name + "'</div>");
+            switch (status) {
+                case HttpServletResponse.SC_INTERNAL_SERVER_ERROR:
+                    request.getServletContext().log(errorMessage, ex);
+                    message += errorMessage;
+                    message += ". - Please contact server administrator.";
+                    break;
+                case HttpServletResponse.SC_NOT_FOUND:
+                    message += "Requested page not found";
+                    break;
             }
             out.println("<!DOCTYPE html>");
             out.println("<html>");
@@ -57,15 +53,15 @@ public class ProductList extends HttpServlet {
             out.println("<meta charset='UTF-8'>");
             out.println("<meta name='viewport' " + "content='width=device-width, initial-scale=1.0'>");
             out.println("<link rel='stylesheet'" + "type='text/css' href='css/pm.css'>");
-            out.println("<title>Product List</title>");
+            out.println("<title>Error Page</title>");
             out.println("</head>");
             out.println("<body>");
-            out.println("<header class='header'>Products</header>");
-            out.println("<nav class='nav'><a href= '/pm/ProductSearch.html'>Back to product search</a></nav>");
+            out.println("<header class='header'>Errors</header>");
+            out.println("<nav class='nav'><a href= '/pm'>Home</a></nav>");
             out.println("<section class='content'");
-            out.println(content);
+            out.println("<div class='error'>" + message + "</div>");
             out.println("</section>");
-            out.println("<footer class='footer'>Invoker used method " + request.getMethod() + "</footer>");
+            out.println("<footer class='footer'>Click on th Home page link to star over </footer>");
             out.println("</body>");
             out.println("</html>");
         }
@@ -83,13 +79,7 @@ public class ProductList extends HttpServlet {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        String error = request.getParameter("error");
-        if(error!= null){
-            throw new ServletException("Test Servlet Error");
-        }
-        RequestDispatcher rd = request.getRequestDispatcher("ProductSearch.html");
-        rd.forward(request, response);
-        //processRequest(request, response);
+        processRequest(request, response);
     }
 
     /**
