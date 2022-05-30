@@ -84,7 +84,7 @@ public class ProductList extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         String error = request.getParameter("error");
-        if(error!= null){
+        if (error != null) {
             throw new ServletException("Test Servlet Error");
         }
         RequestDispatcher rd = request.getRequestDispatcher("ProductSearch.html");
