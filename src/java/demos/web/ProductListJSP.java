@@ -4,8 +4,12 @@
  */
 package demos.web;
 
+import demos.db.Product;
+import demos.model.ProductManager;
 import java.io.IOException;
-import java.io.PrintWriter;
+import java.util.List;
+import javax.inject.Inject;
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -14,10 +18,12 @@ import javax.servlet.http.HttpServletResponse;
 
 /**
  *
- * @author cristina
+ * @author cristina Servlet creado para la práctica 8
  */
-@WebServlet(name = "ErrorHandler", urlPatterns = {"/errors"})
-public class ErrorHandler extends HttpServlet {
+@WebServlet(name = "ProductListJSP", urlPatterns = {"/listJSP"})
+public class ProductListJSP extends HttpServlet {
+       @Inject
+    ProductManager pm;
 
     /**
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
@@ -30,41 +36,19 @@ public class ErrorHandler extends HttpServlet {
      */
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
-        response.setContentType("text/html;charset=UTF-8");
-        try ( PrintWriter out = response.getWriter()) {
-            Throwable ex = (Throwable) request.getAttribute("javax.servlet.error.exception");
-            String errorMessage = (String) request.getAttribute("javax.servlet.error.message");
-            Integer status = (Integer) request.getAttribute("javax.servlet.error.status_code");
-            String message = "Error: ";
+            String name = request.getParameter("p_name");
 
-            switch (status) {
-                case HttpServletResponse.SC_INTERNAL_SERVER_ERROR:
-                    request.getServletContext().log(errorMessage, ex);
-                    message += errorMessage;
-                    message += ". - Please contact server administrator.";
-                    break;
-                case HttpServletResponse.SC_NOT_FOUND:
-                    message += "Requested page not found";
-                    break;
+            List<Product> products = pm.findProductByName(name);
+            if (!products.isEmpty()) {
+                pm.setProducts(products);
+            } else {
+                pm.setErrors(true);
+                pm.setStatus("Unable fo find any products matching the name '"+name+"'");
             }
-            out.println("<!DOCTYPE html>");
-            out.println("<html>");
-            out.println("<head>");
-            out.println("<meta charset='UTF-8'>");
-            out.println("<meta name='viewport' " + "content='width=device-width, initial-scale=1.0'>");
-            out.println("<link rel='stylesheet'" + "type='text/css' href='css/pm.css'>");
-            out.println("<title>Error Page</title>");
-            out.println("</head>");
-            out.println("<body>");
-            out.println("<header class='header'>Errors</header>");
-            out.println("<nav class='nav'><a href= '/pm'>Home</a></nav>");
-            out.println("<section class='content'");
-            out.println("<div class='error'>" + message + "</div>");
-            out.println("</section>");
-            out.println("<footer class='footer'>Click on the Home page link to star over </footer>");
-            out.println("</body>");
-            out.println("</html>");
-        }
+    
+        
+        RequestDispatcher rd = request.getRequestDispatcher("ProductList.jsp");
+        rd.forward(request, response);
     }
 
     // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
